@@ -1,0 +1,9 @@
+DROP INDEX IF EXISTS encounters_patient_id_idx;
+DROP INDEX IF EXISTS encounters_organization_date_idx;
+DROP INDEX IF EXISTS encounter_providers_provider_id_idx;
+DROP INDEX IF EXISTS conditions_patient_id_idx;
+DROP INDEX IF EXISTS medications_patient_id_idx;
+DROP INDEX IF EXISTS medications_encounter_id_idx;
+DROP INDEX IF EXISTS medications_code_idx;
+DROP INDEX IF EXISTS observations_patient_code_idx;
+DROP INDEX IF EXISTS observations_observed_at_idx;

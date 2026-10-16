@@ -1,0 +1,2 @@
+DROP INDEX IF EXISTS patient_documents_document_gin_idx;
+DROP INDEX IF EXISTS patient_documents_patient_gender_idx;

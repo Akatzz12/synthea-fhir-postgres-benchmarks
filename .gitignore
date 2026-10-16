@@ -1,0 +1,18 @@
+# Local tools and generated experiment output
+tools/*.jar
+data/
+results/
+figures/
+*.log
+
+# Local documentation not published to GitHub
+docs/
+*.md
+*.rst
+*.adoc
+
+# Python environment and caches
+.venv/
+.pytest_cache/
+__pycache__/
+*.py[cod]
