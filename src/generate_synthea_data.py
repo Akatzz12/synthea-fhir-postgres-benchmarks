@@ -152,7 +152,9 @@ def summarize_fhir_directory(directory: str | Path) -> dict[str, Any]:
     return {
         "file_count": len(json_files),
         "resource_counts": dict(sorted(resource_counts.items())),
+        "total_fhir_resources": sum(resource_counts.values()),
         "patient_count": len(patient_ids),
+        "raw_file_bytes": sum(path.stat().st_size for path in json_files),
     }
 
 
@@ -190,14 +192,17 @@ def generate_synthea_dataset(
         command.append(str(state))
 
     generation_log_path = Path(log_file) if log_file else output_path.parent / f"{output_path.name}_generation.log"
+    generation_started_at = time.monotonic()
     _run_synthea(
         command,
         population_size=population_size,
         log_path=generation_log_path,
     )
+    generation_seconds = time.monotonic() - generation_started_at
 
     summary = summarize_fhir_directory(output_path)
     summary["population_size"] = population_size
+    summary["generation_seconds"] = generation_seconds
     summary["state"] = state
     summary["seed"] = seed
     summary["output_dir"] = str(output_path)

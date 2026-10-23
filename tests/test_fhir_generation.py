@@ -36,6 +36,10 @@ def test_summarize_fhir_directory_counts_resources(sample_fhir_dir: Path) -> Non
     assert summary["resource_counts"]["Encounter"] == 1
     assert summary["resource_counts"]["Condition"] == 1
     assert summary["patient_count"] == 1
+    assert summary["total_fhir_resources"] == 3
+    assert summary["raw_file_bytes"] == sum(
+        path.stat().st_size for path in sample_fhir_dir.glob("*.json")
+    )
 
 
 def test_summarize_fhir_directory_rejects_invalid_json(tmp_path: Path) -> None:
