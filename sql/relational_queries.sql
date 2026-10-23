@@ -83,3 +83,18 @@ WHERE m.code_system = %s
   AND e.start_time >= %s::timestamptz
   AND e.start_time < %s::timestamptz
 ORDER BY p.patient_id;
+
+-- name: cohort_conditions
+SELECT DISTINCT p.patient_id
+FROM patients p
+JOIN conditions c ON c.patient_id = p.patient_id
+WHERE c.code_system = %s
+  AND c.code = %s
+ORDER BY p.patient_id;
+
+-- name: encounter_date_range
+SELECT COUNT(DISTINCT e.patient_id)::bigint AS patient_count,
+       COUNT(e.encounter_id)::bigint        AS encounter_count
+FROM encounters e
+WHERE e.start_time >= %s::timestamptz
+  AND e.start_time <  %s::timestamptz;

@@ -22,6 +22,8 @@ QUERY_NAMES = (
     "patient_history",
     "bmi_by_gender",
     "medication_by_region_date",
+    "cohort_conditions",
+    "encounter_date_range",
 )
 HISTORY_ID_KEYS = {
     "encounters": "encounter_id",
@@ -77,6 +79,11 @@ def _result_signature(query_name: str, rows: list[tuple[Any, ...]], design: str)
             "observation_count": int(count),
             "avg_bmi": format(average, "f") if isinstance(average, Decimal) else average,
         }
+    if query_name == "encounter_date_range":
+        if not rows:
+            return {"patient_count": 0, "encounter_count": 0}
+        patient_count, encounter_count = rows[0]
+        return {"patient_count": int(patient_count), "encounter_count": int(encounter_count)}
     return [str(row[0]) for row in rows]
 
 
@@ -85,6 +92,10 @@ def _query_parameters(query_name: str, design: str, patient_id: str) -> tuple[An
         return (patient_id,)
     if query_name == "bmi_by_gender":
         return ("female",)
+    if query_name == "cohort_conditions":
+        return ("http://snomed.info/sct", "444814009")  # Viral sinusitis
+    if query_name == "encounter_date_range":
+        return ("2015-01-01T00:00:00+00:00", "2023-01-01T00:00:00+00:00")
     common = (
         "http://www.nlm.nih.gov/research/umls/rxnorm",
         "314076",
@@ -148,6 +159,12 @@ def run_query_benchmarks(
         ]
         rng = random.Random(random_seed)
 
+        # Warm-up pass: execute each query once to populate shared_buffers before timing.
+        for design, query_name in schedule:
+            connections[design].execute(
+                query_files[design][query_name], parameters[design][query_name]
+            ).fetchall()
+
         for repetition in range(1, repetitions + 1):
             current_schedule = schedule.copy()
             rng.shuffle(current_schedule)
@@ -210,6 +227,8 @@ def run_query_benchmarks(
                 ]
                 summaries[design][query_name] = {
                     "runs": results[design][query_name],
+                    "mean_ms": statistics.mean(timings),
+                    "stdev_ms": statistics.stdev(timings) if len(timings) > 1 else 0.0,
                     "median_ms": statistics.median(timings),
                     "p95_ms_nearest_rank": _percentile_95(timings),
                 }
@@ -220,8 +239,7 @@ def run_query_benchmarks(
             "repetitions": repetitions,
             "random_seed_for_order": random_seed,
             "cache_state": (
-                "uncontrolled; exploratory queries were run before timing, so these "
-                "measurements may benefit from cached data"
+                "warm; each query was executed once before timing to populate shared_buffers"
             ),
             "parameters": {
                 "patient_id": patient_id,
@@ -255,7 +273,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--relational-dsn", required=True)
     parser.add_argument("--jsonb-dsn", required=True)
-    parser.add_argument("--repetitions", type=int, default=3)
+    parser.add_argument("--repetitions", type=int, default=15)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--output-file", type=Path, default=DEFAULT_OUTPUT)
     return parser

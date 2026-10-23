@@ -48,3 +48,19 @@ JOIN regional_organizations
   ON regional_organizations.patient_id = encounters.patient_id
  AND regional_organizations.organization_reference = encounters.organization_reference
 ORDER BY medication_requests.patient_id;
+
+-- name: cohort_conditions
+SELECT DISTINCT d.patient_id
+FROM patient_documents d,
+     LATERAL jsonb_array_elements(d.document->'conditions') AS cond
+WHERE cond->'code'->'coding'->0->>'system' = %s
+  AND cond->'code'->'coding'->0->>'code'   = %s
+ORDER BY d.patient_id;
+
+-- name: encounter_date_range
+SELECT COUNT(DISTINCT d.patient_id)::bigint AS patient_count,
+       COUNT(encounter)::bigint             AS encounter_count
+FROM patient_documents d,
+     LATERAL jsonb_array_elements(d.document->'encounters') AS encounter
+WHERE (encounter->'period'->>'start')::timestamptz >= %s::timestamptz
+  AND (encounter->'period'->>'start')::timestamptz <  %s::timestamptz;
